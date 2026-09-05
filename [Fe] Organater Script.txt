@@ -1,32 +1,291 @@
-  _____                     _   _             ____                                                              
- |  ___|__  _   _ _ __   __| | | |__  _   _  |  _ \ ___  _ __ ___   __ _ _ __   ___ ______ ___      ____ _ _ __ 
- | |_ / _ \| | | | '_ \ / _` | | '_ \| | | | | |_) / _ \| '_ ` _ \ / _` | '_ \ / _ \_  / _` \ \ /\ / / _` | '__|
- |  _| (_) | |_| | | | | (_| | | |_) | |_| | |  _ < (_) | | | | | | (_| | | | | (_) / / (_| |\ V  V / (_| | |   
- |_|  \___/ \__,_|_| |_|\__,_| |_.__/ \__, | |_| \_\___/|_| |_| |_|\__,_|_| |_|\___/___\__,_| \_/\_/ \__,_|_|   
-                                      |___/                                                                     
-=================================================================================
- 📜 Script:
- 🔽------------------------------------------------------🔽
+-- ============================================
+--  *feito por mx*
+--  Roube um Ovo | Auto Farm Profissional
+--  Delta Executor Mobile
+-- ============================================
 
- require(119819780800418).MorphMonster("username", "organator")
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local VirtualUser = game:GetService("VirtualUser")
 
-==================================================================================
- ❓ How to use?
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
- To execute the script you need to have **SS = ServerSide executor**  
- Or you can execute it only in **your own game**.
+-- Configurações
+local Config = {
+    AutoFarm = false,
+    HomeCFrame = nil,          -- posição onde você ativou o script
+    Speed = 80,
+    AntiAFK = true
+}
 
- ⭐ Good SS executors:
- • https://serverside.fun/  
- • https://aureus.wtf/
+-- Prioridade de raridade (do mais raro pro mais comum)
+local RarityPriority = {
+    ["Divine"] = 10,
+    ["Secret"] = 9,
+    ["Mythical"] = 8,
+    ["Legendary"] = 7,
+    ["Epic"] = 6,
+    ["Rare"] = 5,
+    ["Uncommon"] = 4,
+    ["Common"] = 3
+}
 
-----------------------------------------------------------------------------------
- 🧩 Step 1
- put the require
+-- ======================
+-- INTERFACE
+-- ======================
 
- 🧩 Step 2
- change *username* to your roblox username
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "FeitoPorMx_Hub"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = game:GetService("CoreGui")
 
- 🧩 Step 3
- execute the require script and have fun
-----------------------------------------------------------------------------------
+-- Botão flutuante
+local OpenButton = Instance.new("TextButton")
+OpenButton.Size = UDim2.new(0, 55, 0, 55)
+OpenButton.Position = UDim2.new(0, 15, 0.45, 0)
+OpenButton.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+OpenButton.Text = "🥚"
+OpenButton.TextSize = 26
+OpenButton.Font = Enum.Font.GothamBold
+OpenButton.Parent = ScreenGui
+
+Instance.new("UICorner", OpenButton).CornerRadius = UDim.new(0, 14)
+local stroke = Instance.new("UIStroke", OpenButton)
+stroke.Color = Color3.fromRGB(0, 200, 255)
+stroke.Thickness = 2
+
+-- Frame principal
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 300, 0, 340)
+Main.Position = UDim2.new(0.5, -150, 0.5, -170)
+Main.BackgroundColor3 = Color3.fromRGB(16, 16, 24)
+Main.Visible = false
+Main.Parent = ScreenGui
+
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+local mainStroke = Instance.new("UIStroke", Main)
+mainStroke.Color = Color3.fromRGB(0, 180, 255)
+mainStroke.Thickness = 1.5
+
+-- Header
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 48)
+Header.BackgroundColor3 = Color3.fromRGB(22, 22, 35)
+Header.BorderSizePixel = 0
+Header.Parent = Main
+Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 12)
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -50, 1, 0)
+Title.Position = UDim2.new(0, 14, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "*feito por mx*"
+Title.TextColor3 = Color3.fromRGB(0, 220, 255)
+Title.TextSize = 16
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
+
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.new(0, 32, 0, 32)
+Close.Position = UDim2.new(1, -40, 0.5, -16)
+Close.BackgroundColor3 = Color3.fromRGB(200, 45, 45)
+Close.Text = "X"
+Close.TextColor3 = Color3.new(1,1,1)
+Close.TextSize = 14
+Close.Font = Enum.Font.GothamBold
+Close.Parent = Header
+Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 7)
+
+-- Status
+local Status = Instance.new("TextLabel")
+Status.Size = UDim2.new(1, -24, 0, 36)
+Status.Position = UDim2.new(0, 12, 0, 60)
+Status.BackgroundColor3 = Color3.fromRGB(25, 25, 38)
+Status.Text = "Status: Desativado"
+Status.TextColor3 = Color3.fromRGB(160, 160, 160)
+Status.TextSize = 13
+Status.Font = Enum.Font.Gotham
+Status.Parent = Main
+Instance.new("UICorner", Status).CornerRadius = UDim.new(0, 8)
+
+-- Botão Auto Farm
+local FarmBtn = Instance.new("TextButton")
+FarmBtn.Size = UDim2.new(1, -24, 0, 48)
+FarmBtn.Position = UDim2.new(0, 12, 0, 110)
+FarmBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+FarmBtn.Text = "▶  ATIVAR AUTO FARM"
+FarmBtn.TextColor3 = Color3.new(1,1,1)
+FarmBtn.TextSize = 15
+FarmBtn.Font = Enum.Font.GothamBold
+FarmBtn.Parent = Main
+Instance.new("UICorner", FarmBtn).CornerRadius = UDim.new(0, 9)
+
+-- Info
+local Info = Instance.new("TextLabel")
+Info.Size = UDim2.new(1, -24, 0, 90)
+Info.Position = UDim2.new(0, 12, 0, 175)
+Info.BackgroundColor3 = Color3.fromRGB(25, 25, 38)
+Info.Text = "• Vai no ovo mais raro\n• Volta pro local que você ativou\n• Use conta alt (recomendado)\n• Não farm sem parar"
+Info.TextColor3 = Color3.fromRGB(180, 180, 180)
+Info.TextSize = 13
+Info.Font = Enum.Font.Gotham
+Info.TextXAlignment = Enum.TextXAlignment.Left
+Info.TextYAlignment = Enum.TextYAlignment.Top
+Info.Parent = Main
+Instance.new("UICorner", Info).CornerRadius = UDim.new(0, 8)
+
+local Credit = Instance.new("TextLabel")
+Credit.Size = UDim2.new(1, 0, 0, 25)
+Credit.Position = UDim2.new(0, 0, 1, -30)
+Credit.BackgroundTransparency = 1
+Credit.Text = "*feito por mx*"
+Credit.TextColor3 = Color3.fromRGB(0, 180, 255)
+Credit.TextSize = 12
+Credit.Font = Enum.Font.Gotham
+Credit.Parent = Main
+
+-- ======================
+-- FUNÇÕES
+-- ======================
+
+local function SetStatus(text, color)
+    Status.Text = "Status: " .. text
+    Status.TextColor3 = color or Color3.fromRGB(160, 160, 160)
+end
+
+local function GetRarityScore(name)
+    name = name:lower()
+    if name:find("divine") then return 10
+    elseif name:find("secret") then return 9
+    elseif name:find("myth") then return 8
+    elseif name:find("legend") then return 7
+    elseif name:find("epic") then return 6
+    elseif name:find("rare") then return 5
+    elseif name:find("uncommon") then return 4
+    else return 3
+    end
+end
+
+local function FindBestEgg()
+    local bestEgg = nil
+    local bestScore = 0
+
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("BasePart") then
+            local name = obj.Name:lower()
+            if name:find("egg") or name:find("ovo") then
+                local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
+                if prompt and prompt.Enabled then
+                    local score = GetRarityScore(obj.Name)
+                    if score > bestScore then
+                        bestScore = score
+                        bestEgg = obj
+                    end
+                end
+            end
+        end
+    end
+    return bestEgg
+end
+
+local function Teleport(cf)
+    if HumanoidRootPart and cf then
+        HumanoidRootPart.CFrame = cf + Vector3.new(0, 3, 0)
+    end
+end
+
+-- Loop do Auto Farm
+spawn(function()
+    while true do
+        if Config.AutoFarm and Config.HomeCFrame then
+            local egg = FindBestEgg()
+            if egg then
+                SetStatus("Indo no ovo mais raro...", Color3.fromRGB(0, 220, 255))
+                Teleport(egg:GetPivot())
+                task.wait(0.45)
+
+                local prompt = egg:FindFirstChildWhichIsA("ProximityPrompt", true)
+                if prompt then
+                    fireproximityprompt(prompt)
+                    SetStatus("Ovo pego! Voltando...", Color3.fromRGB(0, 255, 120))
+                    task.wait(0.35)
+                    Teleport(Config.HomeCFrame)
+                    task.wait(1.2)
+                end
+            else
+                SetStatus("Nenhum ovo encontrado...", Color3.fromRGB(255, 180, 50))
+                task.wait(1.5)
+            end
+        end
+        task.wait(0.6)
+    end
+end)
+
+-- Anti AFK
+LocalPlayer.Idled:Connect(function()
+    if Config.AntiAFK then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end
+end)
+
+-- ======================
+-- EVENTOS DA INTERFACE
+-- ======================
+
+local open = false
+OpenButton.MouseButton1Click:Connect(function()
+    open = not open
+    Main.Visible = open
+end)
+
+Close.MouseButton1Click:Connect(function()
+    open = false
+    Main.Visible = false
+end)
+
+FarmBtn.MouseButton1Click:Connect(function()
+    Config.AutoFarm = not Config.AutoFarm
+
+    if Config.AutoFarm then
+        -- Salva a posição atual como base
+        if HumanoidRootPart then
+            Config.HomeCFrame = HumanoidRootPart.CFrame
+        end
+        FarmBtn.Text = "⏹  DESATIVAR AUTO FARM"
+        FarmBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        SetStatus("Auto Farm ATIVO", Color3.fromRGB(0, 255, 120))
+    else
+        FarmBtn.Text = "▶  ATIVAR AUTO FARM"
+        FarmBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+        SetStatus("Desativado", Color3.fromRGB(160, 160, 160))
+    end
+end)
+
+-- Arrastar
+local dragging, dragStart, startPos
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = Main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+print("*feito por mx* | Script carregado com sucesso!")
